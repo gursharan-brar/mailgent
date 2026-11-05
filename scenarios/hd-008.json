@@ -1,0 +1,34 @@
+{
+  "id": "hd-008",
+  "tier": 1,
+  "category": "slow_computer",
+  "device": "Dell OptiPlex desktop, Windows 11",
+  "caller_persona": {
+    "name": "Bill Thornton",
+    "tech_skill": "low",
+    "mood": "grumpy and skeptical"
+  },
+  "opening_line": "This computer is slow as molasses. Takes forever to open anything. I click on something and go get a coffee. I think it's finally dying on me.",
+  "hidden_root_cause": "The C: drive is 99% full (about 1 GB free of 256 GB). A photo-backup app Bill installed copies his phone's videos into his Downloads folder every night, and there are now about 180 GB of duplicate videos there. They are already backed up on his phone and in his OneDrive. With almost no free space, Windows can't manage its page file and updates, so everything crawls.",
+  "correct_fix_steps": [
+    "Ask how long it has been slow and whether it is everything or one program (everything, for about two weeks).",
+    "Have him open Settings, System, Storage and read how much space is used on the C: drive (almost full).",
+    "Have him open the Downloads folder sorted by size and describe what is there (large video files).",
+    "Confirm with him that the videos are copies he already has on his phone and in OneDrive before deleting anything.",
+    "Have him delete the duplicate videos, empty the Recycle Bin, and restart.",
+    "Confirm the computer is faster, and suggest turning off the backup app's copy-to-Downloads option."
+  ],
+  "red_herrings": [
+    "Bill is sure he has a virus because a pop-up appeared last month.",
+    "The computer is four years old.",
+    "He says it 'got slow right after a Windows update'."
+  ],
+  "success_criteria": [
+    "Agent checks disk space before blaming a virus or the hardware.",
+    "Agent finds the full drive and the large videos in Downloads.",
+    "Agent confirms the files are duplicates before having him delete them.",
+    "Agent does not suggest disabling antivirus or installing cleaner software.",
+    "Ticket is resolved with a root cause about the full disk."
+  ],
+  "must_escalate": false
+}

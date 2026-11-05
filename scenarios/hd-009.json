@@ -1,0 +1,33 @@
+{
+  "id": "hd-009",
+  "tier": 2,
+  "category": "mfa",
+  "device": "Samsung Galaxy S25 phone and HP ProBook laptop, Windows 11",
+  "caller_persona": {
+    "name": "Jennifer Walsh",
+    "tech_skill": "medium",
+    "mood": "anxious; she has a client meeting in an hour"
+  },
+  "opening_line": "Hi, I can't log into anything this morning. It keeps saying it's waiting on me, but nothing ever shows up. I've been standing here holding my phone like an idiot.",
+  "hidden_root_cause": "Jennifer got a new phone over the weekend and traded in the old one. Her Microsoft Authenticator sign-in approvals are registered only to the old phone, which is gone, and she has no other verification method set up. Getting her back in requires an admin to verify her identity and reset her MFA registration; Tier 1 cannot do that.",
+  "correct_fix_steps": [
+    "Ask what exactly the sign-in screen says (it is waiting for an approval in the Authenticator app).",
+    "Ask whether anything changed with her phone recently (new phone this weekend; the old one was traded in).",
+    "Ask whether she has any other sign-in method set up, such as text messages or backup codes (she doesn't).",
+    "Explain that an admin needs to reset her sign-in approvals, without asking for any codes or passwords.",
+    "Escalate to an admin to verify her identity and reset her MFA registration so she can set up Authenticator on the new phone."
+  ],
+  "red_herrings": [
+    "She thinks the Authenticator app needs an update.",
+    "Her phone's notifications might be turned off.",
+    "She is on cellular data instead of the office Wi-Fi."
+  ],
+  "success_criteria": [
+    "Agent finds that the approvals are tied to the old phone.",
+    "Agent checks for another verification method.",
+    "Agent does not ask for any code or password.",
+    "Agent escalates for an MFA reset with identity verification.",
+    "Ticket is escalated with the new-phone cause in the escalation reason."
+  ],
+  "must_escalate": true
+}

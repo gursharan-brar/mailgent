@@ -1,0 +1,31 @@
+{
+  "id": "hd-006",
+  "tier": 1,
+  "category": "email",
+  "device": "Dell OptiPlex desktop with Outlook, Windows 11",
+  "caller_persona": {
+    "name": "Frank Delgado",
+    "tech_skill": "low",
+    "mood": "confused but polite"
+  },
+  "opening_line": "Hi, yeah, I'm not getting my emails. Well, I think I'm not. Nobody's written to me since yesterday, which never happens, and my boss says she sent me something this morning.",
+  "hidden_root_cause": "Outlook on Frank's desktop is in Work Offline mode. He clicked the 'Work Offline' button on the Send / Receive tab by accident the previous afternoon. The status bar at the bottom of the Outlook window says 'Working Offline'. New mail is reaching the server normally and shows up fine on his phone.",
+  "correct_fix_steps": [
+    "Ask whether the missing messages show up anywhere else, such as his phone or webmail (they show up on his phone).",
+    "Ask him to read what the bar along the bottom of the Outlook window says ('Working Offline').",
+    "Have him click the Send / Receive tab and click 'Work Offline' once to turn it off.",
+    "Have him click 'Send/Receive All Folders' and confirm the boss's message arrives."
+  ],
+  "red_herrings": [
+    "He got a 'mailbox almost full' warning a few months ago.",
+    "He deleted some old folders yesterday and worries he deleted the messages.",
+    "The office internet seemed slow yesterday."
+  ],
+  "success_criteria": [
+    "Agent checks whether mail arrives on another device to narrow the problem to desktop Outlook.",
+    "Agent finds the 'Working Offline' status.",
+    "Agent has him turn off Work Offline and the new messages arrive.",
+    "Ticket is resolved with a root cause about Outlook's offline mode."
+  ],
+  "must_escalate": false
+}

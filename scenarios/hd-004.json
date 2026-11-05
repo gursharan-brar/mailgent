@@ -1,0 +1,33 @@
+{
+  "id": "hd-004",
+  "tier": 2,
+  "category": "printer",
+  "device": "Dell Latitude laptop, Windows 11",
+  "caller_persona": {
+    "name": "Sam Okafor",
+    "tech_skill": "high",
+    "mood": "calm but under time pressure"
+  },
+  "opening_line": "Hey, nothing I send to the accounting printer comes out, and I've got invoices due by noon. I've tried a few times. It just sits there.",
+  "hidden_root_cause": "A 300-page scanned PDF sent by another user (jsmith) is stuck at the top of the shared queue on the office print server with status 'Error - Printing'. Every job behind it, including Sam's, waits. The printer hardware is fine: it is online, has paper and toner, and its display shows 'Ready'. Clearing another user's job or restarting the Print Spooler on the print server needs admin rights.",
+  "correct_fix_steps": [
+    "Ask whether the printer's display shows any error, jam, or low paper or toner (it shows 'Ready').",
+    "Ask whether coworkers' print jobs are also stuck (yes, two others).",
+    "Have him open the queue from Settings, Printers & scanners, Open print queue, and read what is at the top (a large job from jsmith in 'Error - Printing').",
+    "Have him cancel only his own jobs if he wants to resend them later.",
+    "Escalate to an admin to delete the stuck job or restart the spooler on the print server; mention another printer as a stopgap if one is nearby."
+  ],
+  "red_herrings": [
+    "The printer driver updated last week.",
+    "Sam was on the guest Wi-Fi earlier today before switching to the staff network.",
+    "He wonders if his laptop is the problem because it's the oldest one in the office."
+  ],
+  "success_criteria": [
+    "Agent checks the printer's own status before blaming the laptop.",
+    "Agent establishes that other users are affected.",
+    "Agent has the caller look at the print queue and identifies the stuck job.",
+    "Agent does not tell the caller to restart services, use admin credentials, or reinstall drivers.",
+    "Ticket is escalated with the stuck job and queue details in the escalation reason."
+  ],
+  "must_escalate": true
+}

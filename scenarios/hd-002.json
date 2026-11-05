@@ -1,0 +1,34 @@
+{
+  "id": "hd-002",
+  "tier": 2,
+  "category": "windows_lockout",
+  "device": "Lenovo ThinkPad T14 laptop, Windows 11",
+  "caller_persona": {
+    "name": "Derek Chen",
+    "tech_skill": "medium",
+    "mood": "irritated; he has already lost an hour"
+  },
+  "opening_line": "Yeah, hi. I can't get into my laptop at all now. It was working fine earlier this week, I tried a few times this morning and now it's just dead to me. Can you just fix it from your end?",
+  "hidden_root_cause": "Derek changed his password on Monday. His old personal Android phone, which sits in a drawer at home still powered on, still has his office email account set up with the old password and keeps retrying in the background. Every retry counts as a failed sign-in, so his directory account keeps getting locked out. The sign-in screen shows 'The referenced account is currently locked out and may not be logged on to.' Unlocking the account in Active Directory needs admin rights.",
+  "correct_fix_steps": [
+    "Ask for the exact message on the sign-in screen (the account is locked out).",
+    "Ask whether he changed his password recently (on Monday).",
+    "Ask which other devices have his work email or work account set up, and find the old Android phone that still has the old password.",
+    "Have him remove the work email account from the old phone, or turn the phone off, so it stops retrying.",
+    "Escalate to an admin to unlock the account, noting that the old phone caused the lockouts so it won't lock again."
+  ],
+  "red_herrings": [
+    "Derek thinks someone is trying to hack his account.",
+    "The office Wi-Fi was slow when he arrived this morning.",
+    "His laptop's keyboard has a sticky 'e' key."
+  ],
+  "success_criteria": [
+    "Agent gets the exact lockout message.",
+    "Agent links the lockouts to the recent password change and another device still using the old password.",
+    "Agent has the caller remove the account from, or power off, the old phone.",
+    "Agent escalates the unlock to an admin instead of attempting it.",
+    "Agent never asks for the old or new password.",
+    "Ticket is escalated and the escalation reason mentions the account unlock and the stale device."
+  ],
+  "must_escalate": true
+}

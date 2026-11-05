@@ -1,0 +1,33 @@
+{
+  "id": "hd-007",
+  "tier": 2,
+  "category": "vpn",
+  "device": "Lenovo ThinkPad X1 Carbon laptop at home, Windows 11",
+  "caller_persona": {
+    "name": "Aisha Rahman",
+    "tech_skill": "high",
+    "mood": "impatient; working late from home on a deadline"
+  },
+  "opening_line": "Hey, VPN's not working. I've got a deadline tonight and I can't get to the shared drive. It spins for a while and then fails. I've already rebooted twice.",
+  "hidden_root_cause": "IT moved to a new VPN gateway last Friday and emailed everyone about it. The VPN app on Aisha's laptop has two connection profiles: 'Office VPN' (the old gateway, now shut down) and 'Office VPN (New)'. The app still defaults to the old profile, which gives 'Could not reach the VPN gateway (connection timed out)'. Her home internet works fine.",
+  "correct_fix_steps": [
+    "Ask for the exact error message ('Could not reach the VPN gateway (connection timed out)').",
+    "Ask whether regular websites work on her home internet (they do).",
+    "Ask her to open the VPN app and read which connection profile is selected ('Office VPN').",
+    "Have her select 'Office VPN (New)' and connect, signing in as usual.",
+    "Confirm she can open the shared drive."
+  ],
+  "red_herrings": [
+    "Her home internet felt slow earlier tonight.",
+    "She updated her home router's firmware over the weekend.",
+    "A Windows Firewall pop-up appeared last week and she clicked something on it without reading it."
+  ],
+  "success_criteria": [
+    "Agent gets the exact error and confirms her home internet works.",
+    "Agent finds that the old VPN profile is selected.",
+    "Agent has her connect with the new profile and she reaches the shared drive.",
+    "Agent never suggests disabling the firewall or antivirus.",
+    "Ticket is resolved with a root cause about the outdated VPN profile."
+  ],
+  "must_escalate": false
+}

@@ -1,0 +1,33 @@
+{
+  "id": "hd-005",
+  "tier": 1,
+  "category": "wifi",
+  "device": "Microsoft Surface Laptop 5, Windows 11",
+  "caller_persona": {
+    "name": "Priya Nair",
+    "tech_skill": "medium",
+    "mood": "frustrated; this has happened all week"
+  },
+  "opening_line": "My internet keeps cutting out. Like, I'm in the middle of a Teams call and it just dies, then comes back after a bit. It's been all week and it's driving me nuts.",
+  "hidden_root_cause": "Priya's laptop is connected to 'OfficeGuest' instead of 'OfficeStaff'. She joined the guest network once while visiting the conference room, Windows remembers it with 'Connect automatically' on, and it now prefers it. The guest network's sign-in page expires every hour, which drops her until it reconnects. The staff network and her laptop's adapter are fine.",
+  "correct_fix_steps": [
+    "Ask whether the drops happen at regular times and whether people nearby have the same problem (they don't).",
+    "Ask her to click the Wi-Fi icon in the taskbar and read the name of the network she is connected to ('OfficeGuest').",
+    "Have her right-click 'OfficeGuest' and choose Forget (or untick Connect automatically).",
+    "Have her connect to 'OfficeStaff' with her usual work sign-in and tick Connect automatically.",
+    "Confirm she is on 'OfficeStaff' and the connection is stable."
+  ],
+  "red_herrings": [
+    "Windows installed an update on Tuesday.",
+    "She just started using new Bluetooth headphones.",
+    "The access point in the hallway had a blinking orange light last week."
+  ],
+  "success_criteria": [
+    "Agent asks which network the laptop is connected to.",
+    "Agent identifies the guest network as the cause.",
+    "Agent has her forget the guest network or turn off auto-connect, and join the staff network.",
+    "Agent does not ask for any Wi-Fi or account password.",
+    "Ticket is resolved with a root cause about the guest network."
+  ],
+  "must_escalate": false
+}

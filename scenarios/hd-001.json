@@ -1,0 +1,32 @@
+{
+  "id": "hd-001",
+  "tier": 1,
+  "category": "windows_lockout",
+  "device": "Dell OptiPlex desktop at the front desk, Windows 11",
+  "caller_persona": {
+    "name": "Maria Lopez",
+    "tech_skill": "low",
+    "mood": "flustered and rushed; a client is waiting at the counter"
+  },
+  "opening_line": "Hi, um, yeah, my computer won't let me in? I've done it like five times and it just keeps saying no, and I've got someone standing right here waiting on me.",
+  "hidden_root_cause": "Caps Lock is on. Facilities swapped Maria's keyboard over the weekend and the new keyboard has no Caps Lock indicator light, so she cannot see that every character of her password is being typed in uppercase. The sign-in screen shows 'The password is incorrect. Try again.' The account is not locked yet; the lockout threshold is 10 attempts.",
+  "correct_fix_steps": [
+    "Ask for the exact message on the sign-in screen ('The password is incorrect. Try again.').",
+    "Ask her to check whether Caps Lock is on; because the keyboard has no indicator light, have her click the eye icon at the end of the password box to reveal what she typed.",
+    "She sees the password is in capital letters; have her press Caps Lock once and retype the password, using the eye icon to check it.",
+    "She signs in successfully; confirm and file the ticket as resolved."
+  ],
+  "red_herrings": [
+    "Windows installed an update overnight and the computer restarted by itself.",
+    "A coworker was locked out of her account last week, so Maria thinks IT 'changed something'.",
+    "The monitor flickered when she sat down this morning."
+  ],
+  "success_criteria": [
+    "Agent asks what the error message says before guessing.",
+    "Agent has the caller check Caps Lock or reveal the typed password with the eye icon.",
+    "Caller signs in successfully during the call.",
+    "Agent never asks for the password or for the caller to read it out.",
+    "Ticket is resolved with a root cause that names Caps Lock."
+  ],
+  "must_escalate": false
+}

@@ -1,0 +1,33 @@
+{
+  "id": "hd-003",
+  "tier": 1,
+  "category": "printer",
+  "device": "HP EliteBook laptop, Windows 11",
+  "caller_persona": {
+    "name": "Gloria Abernathy",
+    "tech_skill": "low",
+    "mood": "cheerful and chatty, a little embarrassed"
+  },
+  "opening_line": "Hi hon, it's me again. So I've been trying to get the newsletter out all morning and nothing's coming out. I've hit the button a dozen times! Is that machine broken again?",
+  "hidden_root_cause": "Windows switched Gloria's default printer to 'Microsoft Print to PDF' (the 'Let Windows manage my default printer' setting is on). Each time she clicks Print in Word, it saves to a PDF and opens a Save As window that hides behind Word, so nothing is sent to the real office printer, 'Office Copier 2F'. The copier itself is fine.",
+  "correct_fix_steps": [
+    "Ask what happens on screen after she clicks Print.",
+    "Ask her to open the print screen and read which printer name is selected ('Microsoft Print to PDF').",
+    "Have her choose 'Office Copier 2F' from the printer list and print.",
+    "Have her open Settings, Printers & scanners, turn off 'Let Windows manage my default printer', and set 'Office Copier 2F' as the default.",
+    "Confirm the newsletter printed, and have her close any leftover Save As windows."
+  ],
+  "red_herrings": [
+    "The copier was beeping yesterday afternoon.",
+    "Bob from accounting said the copier might be low on toner.",
+    "She thinks the newsletter file might be 'too big' because it has photos."
+  ],
+  "success_criteria": [
+    "Agent asks what happens when she clicks Print, or which printer is selected, before sending her to the copier.",
+    "Agent identifies that the wrong printer (Print to PDF) is selected.",
+    "Agent has her select the office copier and set it as the default.",
+    "The newsletter prints during the call.",
+    "Ticket is resolved with a root cause about the default printer."
+  ],
+  "must_escalate": false
+}

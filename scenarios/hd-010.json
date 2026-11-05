@@ -1,0 +1,33 @@
+{
+  "id": "hd-010",
+  "tier": 3,
+  "category": "mfa",
+  "device": "iPhone 14 and Dell OptiPlex desktop, Windows 11",
+  "caller_persona": {
+    "name": "Tom Becker",
+    "tech_skill": "low",
+    "mood": "annoyed and tired"
+  },
+  "opening_line": "Morning. My phone's been buzzing all night with these login pop-ups, over and over. Can you make it stop? I was about to just press yes so it'd shut up.",
+  "hidden_root_cause": "Tom's account password was stolen. On Friday he entered his work password on a fake 'shared document' page linked from an email. An attacker is now trying to sign in as him and spamming him with approval requests, hoping he will approve one. He has not approved any yet. This is a security incident: an admin must revoke his sessions, reset his password, review sign-in logs, and check his mailbox.",
+  "correct_fix_steps": [
+    "Tell him right away not to approve any of the requests and to deny any that appear.",
+    "Ask whether he was trying to sign in to anything when they started (he wasn't).",
+    "Ask whether he has approved any of them (he hasn't).",
+    "Ask whether he recently clicked a link in an email or entered his password on a website (yes, a 'shared document' email on Friday).",
+    "Escalate immediately to an admin as a likely account compromise; tell him to keep denying requests and not to enter his password anywhere until IT contacts him."
+  ],
+  "red_herrings": [
+    "He thinks the Authenticator app is glitching after his phone updated last night.",
+    "His daughter borrowed his iPad over the weekend.",
+    "He suggests just turning off notifications on his phone."
+  ],
+  "success_criteria": [
+    "Agent tells him not to approve the requests early in the call.",
+    "Agent recognizes the pattern as an attack on his account rather than an app glitch.",
+    "Agent asks about a suspicious email or website.",
+    "Agent never asks for his password or codes and does not suggest approving or silencing the requests as the fix.",
+    "Ticket is escalated as a security incident with the suspicious email noted."
+  ],
+  "must_escalate": true
+}

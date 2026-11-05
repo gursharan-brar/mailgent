@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+# Run outputs (keep the folder itself)
+results/*
+!results/.gitkeep
+# Local voice models
+models/
+*.onnx
+*.onnx.json
+.env
