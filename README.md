@@ -123,13 +123,66 @@ the saved token counts, so filling prices in later and re-running the report wor
 
 Other knobs: `HELPDESK_CALLER_EFFORT`, `HELPDESK_GRADER_EFFORT` (unset = model default).
 
+## Phase 3: voice layer
+
+```bash
+python -m helpdesk.voice.server                       # browser call at http://127.0.0.1:8000
+python -m helpdesk.voice_test --scenario hd-001       # no-mic end-to-end call
+python -m helpdesk.voice_test --scenario hd-010 --grade
+python -m helpdesk.latency_report                     # summarize results/latency.jsonl
+```
+
+Real speech models: see **[SETUP_LOCAL.md](SETUP_LOCAL.md)**. Without them everything runs
+on the fake adapters (the default).
+
+**Adapters** (`helpdesk/voice/adapters.py`): `STTAdapter.transcribe(wav) -> text` and
+`TTSAdapter.synthesize(text) -> wav` (16-bit PCM mono WAV bytes). Real ones are
+`FasterWhisperSTT` (faster-whisper, `small` model, CPU int8 by default) and `PiperTTS`.
+Fakes: `FakeTTS` returns silent audio sized to the text, with the text tucked into an extra
+WAV chunk, and `FakeSTT` returns that text, or canned text for any other audio. That
+round trip lets full conversations run through the voice pipeline with no models. Chosen
+by environment variable:
+
+| Variable | Values |
+|---|---|
+| `HELPDESK_STT` | `fake` (default), `faster-whisper` |
+| `HELPDESK_TTS` | `fake` (default), `piper` |
+| `HELPDESK_PIPER_VOICE` | path to the agent's Piper `.onnx` voice |
+| `HELPDESK_PIPER_CALLER_VOICE` | optional second voice for the simulated caller in `voice_test` |
+| `HELPDESK_WHISPER_MODEL`, `_DEVICE`, `_COMPUTE`, `_BEAM`, `_DIR` | `small`, `cpu`, `int8`, `1`, download folder |
+
+**Server** (`helpdesk/voice/server.py`): FastAPI with one WebSocket endpoint, `/ws`, and the
+call page `static/call.html`. The page captures the mic with an AudioWorklet, ends a turn
+after a configurable silence (RMS threshold plus silence duration, with 300 ms of pre-roll),
+sends the turn as a 16 kHz WAV, and plays reply audio as it arrives. You can also type a
+caller line. On the server, the agent's reply streams from the API, is split into sentences
+as it arrives, and each sentence is synthesized while the model is still writing the rest,
+so speech starts after the first sentence. The protocol is documented at the top of
+`server.py`.
+
+**Latency** per turn, logged to `results/latency.jsonl`:
+
+- `stt_ms`: speech-to-text time;
+- `llm_first_token_ms`: request sent to first reply token;
+- `tts_first_audio_ms`: synthesis time of the first sentence;
+- `first_audio_ms`: end of the caller's audio to the first reply audio being ready;
+- `total_ms`: end of the caller's audio to the last reply audio.
+
+**No-mic test** (`helpdesk/voice_test.py`): the simulated caller's lines go through TTS,
+then STT, then the agent and sentence-by-sentence TTS, all through the same pipeline as the
+server. The agent only hears what STT produced. It saves `call.json` and every WAV under
+`results/calls/<timestamp>-<id>/` and logs latency.
+
 ## Layout
 
 ```
-helpdesk/        package: agent, caller, grader, harness (run), report, models, safety, pricing
-prompts/         agent.md, caller.md, grader.md
-scenarios/       30 scenario files
-prices.toml      blank price placeholders for you to fill in
-tests/           offline tests; tests/fake_api.py fakes the Anthropic HTTP API so the real SDK is exercised
-results/         run outputs (git-ignored)
+helpdesk/          agent, caller, grader, harness (run), report, models, safety, pricing, CLIs
+helpdesk/voice/    adapters, audio helpers, sentence splitter, voice pipeline, server
+prompts/           agent.md, caller.md, grader.md
+scenarios/         30 scenario files
+static/call.html   browser call page
+prices.toml        blank price placeholders for you to fill in
+SETUP_LOCAL.md     running the real speech models and mic call on your machine
+tests/             offline tests; tests/fake_api.py fakes the Anthropic HTTP API so the real SDK is exercised
+results/           run outputs (git-ignored)
 ```

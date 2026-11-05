@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help Desk Call</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #5d6677; --line: #dde1e8;
+    --accent: #2f6fde; --accent-text: #ffffff; --caller: #eef3fd; --agent: #f1f6ef; --warn: #b3261e;
+    --meter: #3aa76d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1b2029; --text: #e7eaf0; --muted: #9aa3b2; --line: #2c3340;
+      --accent: #6b9cff; --accent-text: #0d1220; --caller: #1d2a42; --agent: #1d2f24; --warn: #ff8a80;
+      --meter: #57c98b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+           padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  #status { color: var(--muted); }
+  label { color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  input[type=number] { width: 80px; font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line);
+                       background: var(--panel); color: var(--text); }
+  .meter { position: relative; height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; margin-top: 12px; }
+  #level { height: 100%; width: 0; background: var(--meter); transition: width 60ms linear; }
+  #thresholdMark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); }
+  ol#transcript { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  #transcript li { padding: 8px 12px; border-radius: 8px; max-width: 90%; overflow-wrap: anywhere; }
+  #transcript li.caller { background: var(--caller); align-self: flex-end; }
+  #transcript li.agent { background: var(--agent); align-self: flex-start; }
+  #transcript li.note { color: var(--muted); font-size: 13px; align-self: center; }
+  #transcript li.error { color: var(--warn); align-self: center; }
+  .who { font-size: 12px; color: var(--muted); display: block; }
+  form { display: flex; gap: 8px; margin-top: 12px; }
+  form input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+               background: var(--panel); color: var(--text); }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>IT help desk</h1>
+  <p class="sub">Talk to the help desk agent. Your turn ends after a short silence; the agent's reply plays back sentence by sentence.</p>
+
+  <div class="panel">
+    <div class="row">
+      <button id="callBtn" class="primary">Start call</button>
+      <button id="hangupBtn" disabled>Hang up</button>
+      <span id="status">Idle</span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label>Silence threshold <input id="threshold" type="range" min="0.002" max="0.08" step="0.001" value="0.015"> <span id="thresholdVal"></span></label>
+      <label>End turn after <input id="silenceMs" type="number" min="300" max="3000" step="100" value="900"> ms of silence</label>
+    </div>
+    <div class="meter" aria-label="microphone level"><div id="level"></div><div id="thresholdMark"></div></div>
+  </div>
+
+  <div class="panel">
+    <ol id="transcript"></ol>
+    <form id="typedForm">
+      <input id="typedText" placeholder="Or type what you'd say (no mic needed)" autocomplete="off" disabled>
+      <button id="typedBtn" disabled>Send</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Turn</th><th>STT</th><th>LLM first token</th><th>TTS first audio</th><th>First audio</th><th>Total</th></tr></thead>
+        <tbody id="latencyRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="ticketPanel" hidden><pre id="ticket"></pre></div>
+</main>
+
+<script>
+// AudioWorklet that forwards raw mic frames (Float32, 128 samples) to the page.
+const WORKLET_SOURCE = `
+class Capture extends AudioWorkletProcessor {
+  process(inputs) {
+    const channel = inputs[0] && inputs[0][0];
+    if (channel) this.port.postMessage(channel.slice(0));
+    return true;
+  }
+}
+registerProcessor('capture', Capture);`;
+
+const TARGET_RATE = 16000;
+const PREROLL_MS = 300;      // audio kept from just before speech starts
+const MIN_SPEECH_MS = 250;   // shorter blips are ignored
+const MAX_TURN_MS = 30000;   // force-end very long turns
+
+const $ = (id) => document.getElementById(id);
+const ui = {
+  call: $('callBtn'), hangup: $('hangupBtn'), status: $('status'), threshold: $('threshold'),
+  thresholdVal: $('thresholdVal'), silenceMs: $('silenceMs'), level: $('level'), mark: $('thresholdMark'),
+  transcript: $('transcript'), typedForm: $('typedForm'), typedText: $('typedText'), typedBtn: $('typedBtn'),
+  latency: $('latencyRows'), ticketPanel: $('ticketPanel'), ticket: $('ticket'),
+};
+
+let ws = null, ctx = null, stream = null, node = null;
+let listening = false, speaking = false, ended = false, turnDone = false;
+let chunks = [], preroll = [], speechStart = 0, lastVoice = 0;
+let playing = 0, nextPlayTime = 0, agentLine = null, pendingAudio = null;
+
+function setStatus(text) { ui.status.textContent = text; }
+function addLine(kind, text, who) {
+  const li = document.createElement('li');
+  li.className = kind;
+  if (who) { const w = document.createElement('span'); w.className = 'who'; w.textContent = who; li.appendChild(w); }
+  li.appendChild(document.createTextNode(text));
+  ui.transcript.appendChild(li);
+  li.scrollIntoView({ block: 'nearest' });
+  return li;
+}
+function updateThresholdUi() {
+  const t = parseFloat(ui.threshold.value);
+  ui.thresholdVal.textContent = t.toFixed(3);
+  ui.mark.style.left = Math.min(100, (t / 0.1) * 100) + '%';
+}
+ui.threshold.addEventListener('input', updateThresholdUi);
+updateThresholdUi();
+
+async function startCall() {
+  ui.call.disabled = true;
+  ended = false; turnDone = false; ui.transcript.innerHTML = ''; ui.latency.innerHTML = ''; ui.ticketPanel.hidden = true;
+  try {
+    ctx = new AudioContext();
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+    });
+    const url = URL.createObjectURL(new Blob([WORKLET_SOURCE], { type: 'application/javascript' }));
+    await ctx.audioWorklet.addModule(url);
+    const source = ctx.createMediaStreamSource(stream);
+    node = new AudioWorkletNode(ctx, 'capture');
+    const mute = ctx.createGain(); mute.gain.value = 0;   // keep the graph running without echoing the mic
+    source.connect(node); node.connect(mute); mute.connect(ctx.destination);
+    node.port.onmessage = (e) => onFrame(e.data);
+  } catch (err) {
+    addLine('error', 'Microphone unavailable (' + err.message + '). You can still type below.');
+    if (!ctx) ctx = new AudioContext();
+  }
+  const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+  ws = new WebSocket(proto + location.host + '/ws');
+  ws.binaryType = 'arraybuffer';
+  ws.onmessage = onMessage;
+  ws.onclose = () => { setStatus(ended ? 'Call ended' : 'Disconnected'); cleanup(false); };
+  ui.hangup.disabled = false; ui.typedText.disabled = false; ui.typedBtn.disabled = false;
+  setStatus('Connecting…');
+}
+
+function onFrame(frame) {
+  let sum = 0;
+  for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
+  const rms = Math.sqrt(sum / frame.length);
+  ui.level.style.width = Math.min(100, (rms / 0.1) * 100) + '%';
+  if (!listening) return;
+  const now = performance.now();
+  const threshold = parseFloat(ui.threshold.value);
+  if (!speaking) {
+    preroll.push(frame);
+    const maxPreroll = Math.ceil((PREROLL_MS / 1000) * ctx.sampleRate / frame.length);
+    while (preroll.length > maxPreroll) preroll.shift();
+    if (rms > threshold) {
+      speaking = true; chunks = preroll; preroll = []; speechStart = now; lastVoice = now;
+      setStatus('Listening… (hearing you)');
+    }
+    return;
+  }
+  chunks.push(frame);
+  if (rms > threshold) lastVoice = now;
+  const silence = now - lastVoice;
+  if (silence > parseInt(ui.silenceMs.value, 10) || now - speechStart > MAX_TURN_MS) endTurn(lastVoice - speechStart);
+}
+
+function endTurn(speechMs) {
+  speaking = false;
+  const captured = chunks; chunks = [];
+  if (speechMs < MIN_SPEECH_MS) { setStatus('Listening…'); return; }   // a click or cough
+  listening = false;
+  const wav = encodeWav(downsample(concat(captured), ctx.sampleRate, TARGET_RATE), TARGET_RATE);
+  ws.send(wav);
+  turnDone = false; agentLine = null;
+  setStatus('Thinking…');
+}
+
+function onMessage(event) {
+  if (typeof event.data !== 'string') { playWav(event.data, pendingAudio); pendingAudio = null; return; }
+  const msg = JSON.parse(event.data);
+  switch (msg.type) {
+    case 'ready': setStatus('Connected (' + msg.stt + ' / ' + msg.tts + ', ' + msg.agent_model + ')'); break;
+    case 'caller_text': addLine('caller', msg.text, 'You'); break;
+    case 'agent_delta':
+      if (!agentLine) agentLine = addLine('agent', '', 'Help desk');
+      agentLine.lastChild.textContent += msg.text;
+      break;
+    case 'audio':
+      pendingAudio = msg;
+      if (msg.seq === 0 && !agentLine) agentLine = addLine('agent', msg.text, 'Help desk');  // greeting
+      break;
+    case 'turn_done':
+      turnDone = true; agentLine = null;
+      if (msg.latency) addLatency(msg.turn, msg.latency);
+      maybeListen();
+      break;
+    case 'ticket':
+      ui.ticketPanel.hidden = false;
+      ui.ticket.textContent = 'Ticket ' + msg.ticket_id + '\n' + JSON.stringify(msg.ticket, null, 2);
+      break;
+    case 'call_ended': ended = true; listening = false; setStatus('Call ended'); break;
+    case 'error': addLine('error', msg.message); break;
+  }
+}
+
+async function playWav(arrayBuffer) {
+  playing++;
+  try {
+    const buffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+    const src = ctx.createBufferSource();
+    src.buffer = buffer; src.connect(ctx.destination);
+    const startAt = Math.max(ctx.currentTime + 0.02, nextPlayTime);
+    nextPlayTime = startAt + buffer.duration;
+    src.onended = () => { playing--; maybeListen(); };
+    src.start(startAt);
+    setStatus('Agent speaking…');
+  } catch (err) {
+    playing--; addLine('error', 'Could not play reply audio: ' + err.message); maybeListen();
+  }
+}
+
+function maybeListen() {
+  if (turnDone && playing === 0 && !ended && ws && ws.readyState === WebSocket.OPEN) {
+    listening = !!node; preroll = [];
+    setStatus(node ? 'Listening…' : 'Type your reply below');
+  }
+}
+
+function addLatency(turn, l) {
+  const fmt = (v) => (v === null || v === undefined) ? '–' : Math.round(v) + ' ms';
+  const tr = document.createElement('tr');
+  [turn, fmt(l.stt_ms), fmt(l.llm_first_token_ms), fmt(l.tts_first_audio_ms), fmt(l.first_audio_ms), fmt(l.total_ms)]
+    .forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+  ui.latency.appendChild(tr);
+}
+
+ui.typedForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = ui.typedText.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN || ended) return;
+  listening = false; speaking = false; chunks = [];
+  ws.send(JSON.stringify({ type: 'caller_text', text }));
+  ui.typedText.value = ''; turnDone = false; agentLine = null;
+  setStatus('Thinking…');
+});
+
+function cleanup(sendHangup) {
+  listening = false; speaking = false;
+  if (sendHangup && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'hangup' }));
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  stream = null; node = null;
+  ui.call.disabled = false; ui.hangup.disabled = true; ui.typedText.disabled = true; ui.typedBtn.disabled = true;
+}
+ui.call.addEventListener('click', startCall);
+ui.hangup.addEventListener('click', () => { cleanup(true); if (ws) ws.close(); setStatus('Hung up'); });
+
+// ---- audio helpers
+function concat(frames) {
+  const total = frames.reduce((n, f) => n + f.length, 0);
+  const out = new Float32Array(total);
+  let offset = 0;
+  for (const f of frames) { out.set(f, offset); offset += f.length; }
+  return out;
+}
+function downsample(input, inRate, outRate) {
+  if (inRate === outRate) return input;
+  const ratio = inRate / outRate, outLength = Math.floor(input.length / ratio), out = new Float32Array(outLength);
+  for (let i = 0; i < outLength; i++) {
+    const start = Math.floor(i * ratio), end = Math.min(input.length, Math.floor((i + 1) * ratio));
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += input[j];
+    out[i] = end > start ? sum / (end - start) : 0;
+  }
+  return out;
+}
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2), view = new DataView(buffer);
+  const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+  writeStr(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); writeStr(8, 'WAVE');
+  writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  writeStr(36, 'data'); view.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return buffer;
+}
+</script>
+</body>
+</html>

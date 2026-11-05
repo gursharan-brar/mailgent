@@ -12,4 +12,7 @@ results/*
 models/
 *.onnx
 *.onnx.json
+# ...except the tiny stand-in voice used by tests
+!tests/fixtures/*.onnx
+!tests/fixtures/*.onnx.json
 .env
