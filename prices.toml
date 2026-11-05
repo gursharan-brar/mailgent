@@ -1,0 +1,33 @@
+# Token prices in USD per 1 million tokens, one table per model ID.
+#
+# Left blank on purpose. Fill these in from Anthropic's pricing page
+# (https://www.anthropic.com/pricing). Until a model used in a run has both
+# input and output filled in, its cost is reported as "n/a".
+#
+# cache_write: writing to the prompt cache (5-minute cache)
+# cache_read:  reading from the prompt cache
+# A blank cache price only matters if a run actually used the cache.
+#
+# The report recomputes cost from the saved token counts, so you can fill
+# this in after a run and re-run `python -m helpdesk.report`.
+
+# Help desk agent and simulated caller.
+[models.claude-haiku-5-5]
+input = ""
+output = ""
+cache_write = ""
+cache_read = ""
+
+# Grader.
+[models.claude-sonnet-5-5]
+input = ""
+output = ""
+cache_write = ""
+cache_read = ""
+
+# Only needed if you run the agent with --models opus.
+[models.claude-opus-5-5]
+input = ""
+output = ""
+cache_write = ""
+cache_read = ""

@@ -73,12 +73,63 @@ including the model's thinking blocks, as Haiku 5.5 requires.
 Tunable through environment variables: `HELPDESK_AGENT_EFFORT` (low|medium|high|xhigh|max;
 unset = the model's default), `HELPDESK_PROMPT_CACHE=0` to turn off prompt caching.
 
+## Phase 2: simulated caller, grader, harness
+
+```bash
+python -m helpdesk.run --runs 3 --models haiku          # all 10 full scenarios x 3 runs
+python -m helpdesk.run --runs 1 --scenarios hd-001,hd-007 --concurrency 2
+python -m helpdesk.run --runs 3 --models haiku,sonnet   # compare agent models
+python -m helpdesk.report                               # table for the newest results file
+python -m helpdesk.report results/20261105-120000.jsonl
+```
+
+Each run: the simulated caller opens with the scenario's opening line, then the agent and the
+caller alternate until the agent files a ticket. Hard caps: 15 agent replies
+(`--max-turns`) and 200,000 agent+caller tokens per run (`--max-tokens-per-run`, checked
+before every model call). Then the grader scores the call. Runs execute in parallel
+(`--concurrency`, default 5).
+
+Output: `results/<timestamp>.jsonl`, one line per run with the full transcript, ticket, grade,
+token counts per role, cost, and wall time. The report is printed at the end and also saved
+next to it as `results/<timestamp>.md`.
+
+**Simulated caller** (`helpdesk/caller.py`, prompt `prompts/caller.md`, `claude-haiku-5-5`):
+plays the scenario's persona at its tech-skill level and mood, answers only what it's asked,
+never states the hidden root cause (it knows it only to keep its answers consistent), goes
+along with red herrings if the agent chases them, and confirms the fix once the key step is
+done. Each caller reply is a single request containing the transcript so far.
+
+**Grader** (`helpdesk/grader.py`):
+
+1. Deterministic checks: a ticket was submitted, its status matches `must_escalate`
+   (`escalated` vs `resolved`), and the pattern scanner in `helpdesk/safety.py` finds no risky
+   step in anything the agent said.
+2. LLM judge on `claude-sonnet-5-5` with the rubric in `prompts/grader.md`, using structured
+   output so it returns JSON: `root_cause_correct`, `fix_correct`, `risky_advice` (list),
+   `efficiency` (turns used), `score` (0-100), `reason` (one line).
+
+A run **passes** when the deterministic checks pass, the judge marks root cause and fix
+correct, lists no risky advice, and scores at least 70 (`HELPDESK_PASS_SCORE`).
+
+The judge request turns on server-side refusal fallback (beta `server-side-fallback-2026-07-01`,
+`fallbacks: "default"`): if a safety classifier declines the grading request, the API retries
+it on a fallback model in the same call, and `grade.judge_model` records which model answered.
+If your organization rejects the parameter, the grader retries without it automatically; set
+`HELPDESK_GRADER_FALLBACKS=off` to never send it.
+
+**Cost**: `prices.toml` has blank placeholders for each model. Fill in USD per million tokens
+from Anthropic's pricing page. Until then cost shows as `n/a`. The report recomputes cost from
+the saved token counts, so filling prices in later and re-running the report works.
+
+Other knobs: `HELPDESK_CALLER_EFFORT`, `HELPDESK_GRADER_EFFORT` (unset = model default).
+
 ## Layout
 
 ```
-helpdesk/        package (agent, models, scenarios, safety checks, CLIs)
-prompts/         agent.md (system prompt)
+helpdesk/        package: agent, caller, grader, harness (run), report, models, safety, pricing
+prompts/         agent.md, caller.md, grader.md
 scenarios/       30 scenario files
+prices.toml      blank price placeholders for you to fill in
 tests/           offline tests; tests/fake_api.py fakes the Anthropic HTTP API so the real SDK is exercised
 results/         run outputs (git-ignored)
 ```

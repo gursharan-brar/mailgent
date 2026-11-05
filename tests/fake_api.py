@@ -58,10 +58,12 @@ class FakeAPI:
         agent: Iterable[Spec] | Callable[[dict[str, Any]], Spec] | None = None,
         caller: Iterable[str] | Callable[[dict[str, Any]], str] | None = None,
         grader: dict[str, Any] | Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+        errors: Callable[[dict[str, Any]], tuple[int, dict[str, Any]] | None] | None = None,
     ):
         self._agent = agent if callable(agent) else list(agent or [text("What do you see on the screen?")])
         self._caller = caller if callable(caller) else list(caller or ["Okay, I did that."])
         self._grader = grader
+        self._errors = errors
         self.requests: list[dict[str, Any]] = []
         self._ids = itertools.count(1)
         self._agent_i = 0
@@ -108,8 +110,12 @@ class FakeAPI:
     def _handle(self, request: httpx2.Request) -> httpx2.Response:
         body = json.loads(request.content)
         body["_path"] = request.url.path
+        body["_query"] = request.url.query.decode() if isinstance(request.url.query, bytes) else str(request.url.query)
         body["_beta"] = request.headers.get("anthropic-beta")
         self.requests.append(body)
+        if self._errors and (failure := self._errors(body)):
+            status, payload = failure
+            return httpx2.Response(status, json=payload)
         message = self._build_message(self._spec_for(body), body)
         if body.get("stream"):
             return httpx2.Response(
